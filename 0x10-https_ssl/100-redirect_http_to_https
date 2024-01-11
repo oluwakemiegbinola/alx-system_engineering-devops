@@ -33,13 +33,19 @@ defaults
 	errorfile 503 /etc/haproxy/errors/503.http
 	errorfile 504 /etc/haproxy/errors/504.http
 
-listen	balancer
-	# frontend config settings
-	bind :80
-	bind *:443 ssl crt /etc/letsencrypt/live/www.bizhero.tech/fullchain.pem
-    http-request redirect scheme https code 301 unless { ssl_fc }
+frontend  bizhero-frontend-http
+        bind *:80
+        mode http
+	http-request set-header X-Forwarded-Proto http
+        default_backend bizhero-backend
 
-	# backend config settings
-	balance roundrobin
+frontend bizhero-frontend-https
+	bind *:443 ssl crt /etc/haproxy/certs/www.bizhero.tech.pem
+	http-request set-header X-Forwarded-Proto https
+	http-request redirect scheme https code 301 unless { ssl_fc }
+	default_backend bizhero-backend
+
+backend bizhero-backend
+        balance roundrobin
 	server 450206-web-01 54.236.48.70:80 check
 	server 450206-web-02 3.86.13.92:80 check
